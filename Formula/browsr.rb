@@ -12,12 +12,12 @@ class Browsr < Formula
   version "1.2.0"
 
   depends_on "python@3.12"
-  # Homebrew's pre-compiled cryptography avoids a Rust/maturin source build
+  # Pre-compiled by Homebrew — avoids Rust/maturin build for cryptography
   depends_on "cryptography"
 
-  # ── Pure-Python resources (built from source) ────────────────────────────────
-  # jiter and pydantic_core are Rust-compiled — they are handled via binary
-  # wheels in the install block below. cryptography/cffi come from depends_on.
+  # ── Pure-Python resources (sdist, built from source) ─────────────────────────
+  # Rust packages (jiter, pydantic_core, selenium) are installed via pre-built
+  # binary/universal wheels in the install block. cryptography/cffi via depends_on.
 
   resource "annotated-types" do
     url "https://files.pythonhosted.org/packages/ee/67/531ea369ba64dcff5ec9c3402f9f51bf748cec26dde048a2f973a4eea7f5/annotated_types-0.7.0.tar.gz"
@@ -94,11 +94,6 @@ class Browsr < Formula
     sha256 "3f8804571ebe159c380ac6de37643bb4685970655d3bba243530d6558b799aa0"
   end
 
-  resource "selenium" do
-    url "https://files.pythonhosted.org/packages/04/7c/133d00d6d013a17d3f39199f27f1a780ec2e95d7b9aa997dc1b8ac2e62a7/selenium-4.41.0.tar.gz"
-    sha256 "003e971f805231ad63e671783a2b91a299355d10cefb9de964c36ff3819115aa"
-  end
-
   resource "sniffio" do
     url "https://files.pythonhosted.org/packages/a2/87/a6771e1546d97e7e041b6ae58d80074f81b7d5121207425c964ddf5cfdbd/sniffio-1.3.1.tar.gz"
     sha256 "f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc"
@@ -149,8 +144,15 @@ class Browsr < Formula
     sha256 "b86885dcf294e15204919950f666e06ffc6c7c114ca900b060d6e16293528294"
   end
 
-  # ── Rust-compiled wheels (pre-built, no maturin/Rust needed) ─────────────────
+  # ── Rust-compiled packages as pre-built wheels (no maturin/Rust needed) ──────
 
+  # selenium: py3-none-any wheel contains pre-compiled selenium-manager binaries
+  resource "selenium-wheel" do
+    url "https://files.pythonhosted.org/packages/a8/d6/e4160989ef6b272779af6f3e5c43c3ba9be6687bdc21c68c3fb220e555b3/selenium-4.41.0-py3-none-any.whl"
+    sha256 "b8ccde8d2e7642221ca64af184a92c19eee6accf2e27f20f30472f5efae18eb1"
+  end
+
+  # jiter: Rust extension, arch-specific wheel
   resource "jiter-wheel" do
     on_arm do
       url "https://files.pythonhosted.org/packages/c3/27/e57f9a783246ed95481e6749cc5002a8a767a73177a83c63ea71f0528b90/jiter-0.13.0-cp312-cp312-macosx_11_0_arm64.whl"
@@ -162,6 +164,7 @@ class Browsr < Formula
     end
   end
 
+  # pydantic_core: Rust extension, arch-specific wheel
   resource "pydantic_core-wheel" do
     on_arm do
       url "https://files.pythonhosted.org/packages/aa/32/9c2e8ccb57c01111e0fd091f236c7b371c1bccea0fa85247ac55b1e2b6b6/pydantic_core-2.41.5-cp312-cp312-macosx_11_0_arm64.whl"
@@ -174,24 +177,25 @@ class Browsr < Formula
   end
 
   def install
-    # Create virtualenv with system-site-packages so Homebrew's cryptography is visible
+    # system_site_packages: true lets virtualenv inherit Homebrew's cryptography
     venv = virtualenv_create(libexec, "python3.12", system_site_packages: true)
     venv_python = libexec/"bin/python3.12"
-    pip_base = [venv_python, "-m", "pip", "install", "--no-deps", "--quiet"]
+    pip_install = [venv_python, "-m", "pip", "install", "--no-deps", "--quiet"]
 
-    # 1. Install Rust-compiled packages from pre-built binary wheels (no Rust needed)
-    resource("jiter-wheel").stage { system(*pip_base, Dir["*.whl"].first) }
-    resource("pydantic_core-wheel").stage { system(*pip_base, Dir["*.whl"].first) }
+    # Install Rust-compiled packages from pre-built wheels (zero Rust/maturin needed)
+    resource("selenium-wheel").stage    { system(*pip_install, Dir["*.whl"].first) }
+    resource("jiter-wheel").stage       { system(*pip_install, Dir["*.whl"].first) }
+    resource("pydantic_core-wheel").stage { system(*pip_install, Dir["*.whl"].first) }
 
-    # 2. Install all pure-Python resources from source
-    skip = %w[jiter-wheel pydantic_core-wheel]
+    # Install all pure-Python resources from source sdists
+    wheel_resources = %w[selenium-wheel jiter-wheel pydantic_core-wheel]
     resources.each do |r|
-      next if skip.include?(r.name)
-      r.stage { system(*pip_base, ".") }
+      next if wheel_resources.include?(r.name)
+      r.stage { system(*pip_install, ".") }
     end
 
-    # 3. Install browsr itself and link the `browsr` binary
-    system(*pip_base, buildpath)
+    # Install browsr itself and expose the binary
+    system(*pip_install, buildpath)
     bin.install_symlink libexec/"bin/browsr"
   end
 
