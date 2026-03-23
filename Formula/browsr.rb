@@ -12,12 +12,12 @@ class Browsr < Formula
   version "1.2.0"
 
   depends_on "python@3.12"
-  # Use Homebrew's pre-compiled cryptography — avoids maturin/Rust build from source
+  # Homebrew's pre-compiled cryptography avoids a Rust/maturin source build
   depends_on "cryptography"
 
-  # ── Dependencies (generated with homebrew-pypi-poet, March 2026) ────────────
-  # NOTE: cryptography and cffi are intentionally omitted — provided by the
-  # cryptography Homebrew formula above (pre-compiled, no Rust needed).
+  # ── Pure-Python resources (built from source) ────────────────────────────────
+  # jiter and pydantic_core are Rust-compiled — they are handled via binary
+  # wheels in the install block below. cryptography/cffi come from depends_on.
 
   resource "annotated-types" do
     url "https://files.pythonhosted.org/packages/ee/67/531ea369ba64dcff5ec9c3402f9f51bf748cec26dde048a2f973a4eea7f5/annotated_types-0.7.0.tar.gz"
@@ -69,11 +69,6 @@ class Browsr < Formula
     sha256 "795dafcc9c04ed0c1fb032c2aa73654d8e8c5023a7df64a53f39190ada629902"
   end
 
-  resource "jiter" do
-    url "https://files.pythonhosted.org/packages/0d/5e/4ec91646aee381d01cdb9974e30882c9cd3b8c5d1079d6b5ff4af522439a/jiter-0.13.0.tar.gz"
-    sha256 "f2839f9c2c7e2dffc1bc5929a510e14ce0a946be9365fd1219e7ef342dae14f4"
-  end
-
   resource "openai" do
     url "https://files.pythonhosted.org/packages/b4/15/203d537e58986b5673e7f232453a2a2f110f22757b15921cbdeea392e520/openai-2.29.0.tar.gz"
     sha256 "32d09eb2f661b38d3edd7d7e1a2943d1633f572596febe64c0cd370c86d52bec"
@@ -92,11 +87,6 @@ class Browsr < Formula
   resource "pydantic" do
     url "https://files.pythonhosted.org/packages/69/44/36f1a6e523abc58ae5f928898e4aca2e0ea509b5aa6f6f392a5d882be928/pydantic-2.12.5.tar.gz"
     sha256 "4d351024c75c0f085a9febbb665ce8c0c6ec5d30e903bdb6394b7ede26aebb49"
-  end
-
-  resource "pydantic_core" do
-    url "https://files.pythonhosted.org/packages/71/70/23b021c950c2addd24ec408e9ab05d59b035b39d97cdc1130e1bce647bb6/pydantic_core-2.41.5.tar.gz"
-    sha256 "08daa51ea16ad373ffd5e7606252cc32f07bc72b28284b6bc9c6df804816476e"
   end
 
   resource "PySocks" do
@@ -159,12 +149,50 @@ class Browsr < Formula
     sha256 "b86885dcf294e15204919950f666e06ffc6c7c114ca900b060d6e16293528294"
   end
 
+  # ── Rust-compiled wheels (pre-built, no maturin/Rust needed) ─────────────────
+
+  resource "jiter-wheel" do
+    on_arm do
+      url "https://files.pythonhosted.org/packages/c3/27/e57f9a783246ed95481e6749cc5002a8a767a73177a83c63ea71f0528b90/jiter-0.13.0-cp312-cp312-macosx_11_0_arm64.whl"
+      sha256 "f917a04240ef31898182f76a332f508f2cc4b57d2b4d7ad2dbfebbfe167eb505"
+    end
+    on_intel do
+      url "https://files.pythonhosted.org/packages/2e/30/7687e4f87086829955013ca12a9233523349767f69653ebc27036313def9/jiter-0.13.0-cp312-cp312-macosx_10_12_x86_64.whl"
+      sha256 "0a2bd69fc1d902e89925fc34d1da51b2128019423d7b339a45d9e99c894e0663"
+    end
+  end
+
+  resource "pydantic_core-wheel" do
+    on_arm do
+      url "https://files.pythonhosted.org/packages/aa/32/9c2e8ccb57c01111e0fd091f236c7b371c1bccea0fa85247ac55b1e2b6b6/pydantic_core-2.41.5-cp312-cp312-macosx_11_0_arm64.whl"
+      sha256 "070259a8818988b9a84a449a2a7337c7f430a22acc0859c6b110aa7212a6d9c0"
+    end
+    on_intel do
+      url "https://files.pythonhosted.org/packages/5f/5d/5f6c63eebb5afee93bcaae4ce9a898f3373ca23df3ccaef086d0233a35a7/pydantic_core-2.41.5-cp312-cp312-macosx_10_12_x86_64.whl"
+      sha256 "f41a7489d32336dbf2199c8c0a215390a751c5b014c2c1c5366e817202e9cdf7"
+    end
+  end
+
   def install
-    # Create virtualenv with system-site-packages=true so it can see
-    # the Homebrew-installed cryptography (avoids Rust/maturin build)
+    # Create virtualenv with system-site-packages so Homebrew's cryptography is visible
     venv = virtualenv_create(libexec, "python3.12", system_site_packages: true)
-    venv.pip_install resources.reject { |r| r.name == "cryptography" || r.name == "cffi" }
-    venv.pip_install_and_link_scripts buildpath
+    venv_python = libexec/"bin/python3.12"
+    pip_base = [venv_python, "-m", "pip", "install", "--no-deps", "--quiet"]
+
+    # 1. Install Rust-compiled packages from pre-built binary wheels (no Rust needed)
+    resource("jiter-wheel").stage { system(*pip_base, Dir["*.whl"].first) }
+    resource("pydantic_core-wheel").stage { system(*pip_base, Dir["*.whl"].first) }
+
+    # 2. Install all pure-Python resources from source
+    skip = %w[jiter-wheel pydantic_core-wheel]
+    resources.each do |r|
+      next if skip.include?(r.name)
+      r.stage { system(*pip_base, ".") }
+    end
+
+    # 3. Install browsr itself and link the `browsr` binary
+    system(*pip_base, buildpath)
+    bin.install_symlink libexec/"bin/browsr"
   end
 
   test do
