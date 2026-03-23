@@ -1,6 +1,6 @@
 # Publishing Browsr to Homebrew
 
-Follow these steps to get `brew install yourusername/browsr/browsr` working.
+Follow these steps to get `brew install rayinuk13/browsr/browsr` working.
 
 ---
 
@@ -90,7 +90,7 @@ git init
 git add .
 git commit -m "Initial tap"
 git branch -M main
-git remote add origin https://github.com/yourusername/homebrew-browsr.git
+git remote add origin https://github.com/rayinuk13/homebrew-browsr.git
 git push -u origin main
 ```
 
@@ -107,8 +107,8 @@ brew test browsr
 
 # If it works, uninstall and test via tap
 brew uninstall browsr
-brew tap yourusername/browsr
-brew install yourusername/browsr/browsr
+brew tap rayinuk13/browsr
+brew install rayinuk13/browsr/browsr
 
 # Verify
 browsr menu
@@ -116,7 +116,7 @@ browsr menu
 
 If something goes wrong, debug with:
 ```bash
-brew install --verbose --debug yourusername/browsr/browsr
+brew install --verbose --debug rayinuk13/browsr/browsr
 ```
 
 ---
