@@ -12,8 +12,12 @@ class Browsr < Formula
   version "1.2.0"
 
   depends_on "python@3.12"
+  # Use Homebrew's pre-compiled cryptography — avoids maturin/Rust build from source
+  depends_on "cryptography"
 
   # ── Dependencies (generated with homebrew-pypi-poet, March 2026) ────────────
+  # NOTE: cryptography and cffi are intentionally omitted — provided by the
+  # cryptography Homebrew formula above (pre-compiled, no Rust needed).
 
   resource "annotated-types" do
     url "https://files.pythonhosted.org/packages/ee/67/531ea369ba64dcff5ec9c3402f9f51bf748cec26dde048a2f973a4eea7f5/annotated_types-0.7.0.tar.gz"
@@ -33,16 +37,6 @@ class Browsr < Formula
   resource "certifi" do
     url "https://files.pythonhosted.org/packages/af/2d/7bf41579a8986e348fa033a31cdd0e4121114f6bce2457e8876010b092dd/certifi-2026.2.25.tar.gz"
     sha256 "e887ab5cee78ea814d3472169153c2d12cd43b14bd03329a39a9c6e2e80bfba7"
-  end
-
-  resource "cffi" do
-    url "https://files.pythonhosted.org/packages/eb/56/b1ba7935a17738ae8453301356628e8147c79dbb825bcbc73dc7401f9846/cffi-2.0.0.tar.gz"
-    sha256 "44d1b5909021139fe36001ae048dbdde8214afa20200eda0f64c068cac5d5529"
-  end
-
-  resource "cryptography" do
-    url "https://files.pythonhosted.org/packages/60/04/ee2a9e8542e4fa2773b81771ff8349ff19cdd56b7258a0cc442639052edb/cryptography-46.0.5.tar.gz"
-    sha256 "abace499247268e3757271b2f1e244b36b06f8515cf27c4d49468fc9eb16e93d"
   end
 
   resource "distro" do
@@ -166,7 +160,11 @@ class Browsr < Formula
   end
 
   def install
-    virtualenv_install_with_resources
+    # Create virtualenv with system-site-packages=true so it can see
+    # the Homebrew-installed cryptography (avoids Rust/maturin build)
+    venv = virtualenv_create(libexec, "python3.12", system_site_packages: true)
+    venv.pip_install resources.reject { |r| r.name == "cryptography" || r.name == "cffi" }
+    venv.pip_install_and_link_scripts buildpath
   end
 
   test do
