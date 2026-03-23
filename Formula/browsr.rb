@@ -5,7 +5,7 @@ class Browsr < Formula
   include Language::Python::Virtualenv
 
   desc "AI-powered Helium browser automation script generator for your terminal"
-  homepage "https://github.com/yourusername/browsr"
+  homepage "https://github.com/rayinuk13/browsr"
   url "https://files.pythonhosted.org/packages/source/b/browsr/browsr-1.2.0.tar.gz"
   sha256 "REPLACE_WITH_REAL_SHA256_AFTER_PYPI_PUBLISH"
   license "MIT"
