@@ -1,20 +1,20 @@
 # 🍺 homebrew-browsr
 
-Official Homebrew tap for [Browsr](https://github.com/yourusername/browsr) — the AI-powered Helium browser automation script generator.
+Official Homebrew tap for [Browsr](https://github.com/rayinuk13/browsr) — the AI-powered Helium browser automation script generator.
 
 ---
 
 ## Install
 
 ```bash
-brew tap yourusername/browsr
+brew tap rayinuk13/browsr
 brew install browsr
 ```
 
 Or in one line:
 
 ```bash
-brew install yourusername/browsr/browsr
+brew install rayinuk13/browsr/browsr
 ```
 
 ---
@@ -61,13 +61,13 @@ browsr update
 
 ```bash
 brew uninstall browsr
-brew untap yourusername/browsr
+brew untap rayinuk13/browsr
 ```
 
 ---
 
 ## Links
 
-- [Browsr on GitHub](https://github.com/yourusername/browsr)
+- [Browsr on GitHub](https://github.com/rayinuk13/browsr)
 - [Browsr on PyPI](https://pypi.org/project/browsr/)
 - [Helium docs](https://github.com/mherrmann/helium)
