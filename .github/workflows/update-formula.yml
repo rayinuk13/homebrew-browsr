@@ -1,0 +1,95 @@
+name: Update Formula
+
+# Automatically updates the Homebrew formula when a new version of browsr
+# is published to PyPI. Trigger this manually or on a schedule.
+
+on:
+  schedule:
+    # Check for new PyPI releases every day at 08:00 UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to update to (leave blank to auto-detect from PyPI)'
+        required: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tap repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Get latest version from PyPI
+        id: pypi
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(curl -s https://pypi.org/pypi/browsr/json | python3 -c "import sys,json; print(json.load(sys.stdin)['info']['version'])")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Get the tarball URL and sha256
+          TARBALL_URL="https://files.pythonhosted.org/packages/source/b/browsr/browsr-${VERSION}.tar.gz"
+          echo "tarball_url=$TARBALL_URL" >> $GITHUB_OUTPUT
+
+          # Download and hash
+          curl -sSL "$TARBALL_URL" -o /tmp/browsr.tar.gz
+          SHA256=$(sha256sum /tmp/browsr.tar.gz | awk '{print $1}')
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+
+          echo "Found version: $VERSION"
+          echo "SHA256: $SHA256"
+
+      - name: Check if update needed
+        id: check
+        run: |
+          CURRENT=$(grep 'version "' Formula/browsr.rb | head -1 | grep -oP '[\d.]+')
+          NEW="${{ steps.pypi.outputs.version }}"
+          if [ "$CURRENT" = "$NEW" ]; then
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+            echo "Already at version $NEW — no update needed."
+          else
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+            echo "Update needed: $CURRENT → $NEW"
+          fi
+
+      - name: Install poet and regenerate resources
+        if: steps.check.outputs.needs_update == 'true'
+        run: |
+          python3 -m venv /tmp/poet-env
+          source /tmp/poet-env/bin/activate
+          pip install --quiet homebrew-pypi-poet browsr==${{ steps.pypi.outputs.version }}
+          poet browsr > /tmp/resources.txt
+          echo "Resources generated:"
+          cat /tmp/resources.txt
+
+      - name: Update formula
+        if: steps.check.outputs.needs_update == 'true'
+        run: |
+          VERSION="${{ steps.pypi.outputs.version }}"
+          SHA256="${{ steps.pypi.outputs.sha256 }}"
+          URL="${{ steps.pypi.outputs.tarball_url }}"
+
+          # Update version, url, sha256 in formula
+          sed -i "s|url \"https://files.pythonhosted.org/packages/source/b/browsr/browsr-.*\.tar\.gz\"|url \"$URL\"|" Formula/browsr.rb
+          sed -i "s|sha256 \"[a-f0-9]*\"|sha256 \"$SHA256\"|" Formula/browsr.rb
+          sed -i "s|version \"[0-9.]*\"|version \"$VERSION\"|" Formula/browsr.rb
+
+          echo "Formula updated to v$VERSION"
+
+      - name: Commit and push
+        if: steps.check.outputs.needs_update == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/browsr.rb
+          git commit -m "browsr ${{ steps.pypi.outputs.version }}"
+          git push
