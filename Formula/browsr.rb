@@ -152,27 +152,51 @@ class Browsr < Formula
     sha256 "b8ccde8d2e7642221ca64af184a92c19eee6accf2e27f20f30472f5efae18eb1"
   end
 
-  # jiter: Rust extension, arch-specific wheel
+  # jiter: Rust extension, OS/arch-specific wheel
   resource "jiter-wheel" do
-    on_arm do
-      url "https://files.pythonhosted.org/packages/c3/27/e57f9a783246ed95481e6749cc5002a8a767a73177a83c63ea71f0528b90/jiter-0.13.0-cp312-cp312-macosx_11_0_arm64.whl"
-      sha256 "f917a04240ef31898182f76a332f508f2cc4b57d2b4d7ad2dbfebbfe167eb505"
+    on_macos do
+      on_arm do
+        url "https://files.pythonhosted.org/packages/c3/27/e57f9a783246ed95481e6749cc5002a8a767a73177a83c63ea71f0528b90/jiter-0.13.0-cp312-cp312-macosx_11_0_arm64.whl"
+        sha256 "f917a04240ef31898182f76a332f508f2cc4b57d2b4d7ad2dbfebbfe167eb505"
+      end
+      on_intel do
+        url "https://files.pythonhosted.org/packages/2e/30/7687e4f87086829955013ca12a9233523349767f69653ebc27036313def9/jiter-0.13.0-cp312-cp312-macosx_10_12_x86_64.whl"
+        sha256 "0a2bd69fc1d902e89925fc34d1da51b2128019423d7b339a45d9e99c894e0663"
+      end
     end
-    on_intel do
-      url "https://files.pythonhosted.org/packages/2e/30/7687e4f87086829955013ca12a9233523349767f69653ebc27036313def9/jiter-0.13.0-cp312-cp312-macosx_10_12_x86_64.whl"
-      sha256 "0a2bd69fc1d902e89925fc34d1da51b2128019423d7b339a45d9e99c894e0663"
+    on_linux do
+      on_arm do
+        url "https://files.pythonhosted.org/packages/cf/52/e5719a60ac5d4d7c5995461a94ad5ef962a37c8bf5b088390e6fad59b2ff/jiter-0.13.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+        sha256 "c1e2b199f446d3e82246b4fd9236d7cb502dc2222b18698ba0d986d2fecc6152"
+      end
+      on_intel do
+        url "https://files.pythonhosted.org/packages/f8/4c/09b93e30e984a187bc8aaa3510e1ec8dcbdcd71ca05d2f56aac0492453aa/jiter-0.13.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+        sha256 "bdaba7d87e66f26a2c45d8cbadcbfc4bf7884182317907baf39cfe9775bb4d93"
+      end
     end
   end
 
-  # pydantic_core: Rust extension, arch-specific wheel
+  # pydantic_core: Rust extension, OS/arch-specific wheel
   resource "pydantic_core-wheel" do
-    on_arm do
-      url "https://files.pythonhosted.org/packages/aa/32/9c2e8ccb57c01111e0fd091f236c7b371c1bccea0fa85247ac55b1e2b6b6/pydantic_core-2.41.5-cp312-cp312-macosx_11_0_arm64.whl"
-      sha256 "070259a8818988b9a84a449a2a7337c7f430a22acc0859c6b110aa7212a6d9c0"
+    on_macos do
+      on_arm do
+        url "https://files.pythonhosted.org/packages/aa/32/9c2e8ccb57c01111e0fd091f236c7b371c1bccea0fa85247ac55b1e2b6b6/pydantic_core-2.41.5-cp312-cp312-macosx_11_0_arm64.whl"
+        sha256 "070259a8818988b9a84a449a2a7337c7f430a22acc0859c6b110aa7212a6d9c0"
+      end
+      on_intel do
+        url "https://files.pythonhosted.org/packages/5f/5d/5f6c63eebb5afee93bcaae4ce9a898f3373ca23df3ccaef086d0233a35a7/pydantic_core-2.41.5-cp312-cp312-macosx_10_12_x86_64.whl"
+        sha256 "f41a7489d32336dbf2199c8c0a215390a751c5b014c2c1c5366e817202e9cdf7"
+      end
     end
-    on_intel do
-      url "https://files.pythonhosted.org/packages/5f/5d/5f6c63eebb5afee93bcaae4ce9a898f3373ca23df3ccaef086d0233a35a7/pydantic_core-2.41.5-cp312-cp312-macosx_10_12_x86_64.whl"
-      sha256 "f41a7489d32336dbf2199c8c0a215390a751c5b014c2c1c5366e817202e9cdf7"
+    on_linux do
+      on_arm do
+        url "https://files.pythonhosted.org/packages/68/b8/a01b53cb0e59139fbc9e4fda3e9724ede8de279097179be4ff31f1abb65a/pydantic_core-2.41.5-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+        sha256 "e96cea19e34778f8d59fe40775a7a574d95816eb150850a85a7a4c8f4b94ac69"
+      end
+      on_intel do
+        url "https://files.pythonhosted.org/packages/0d/76/941cc9f73529988688a665a5c0ecff1112b3d95ab48f81db5f7606f522d3/pydantic_core-2.41.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+        sha256 "eceb81a8d74f9267ef4081e246ffd6d129da5d87e37a77c9bde550cb04870c1c"
+      end
     end
   end
 
